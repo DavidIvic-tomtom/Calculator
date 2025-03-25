@@ -15,7 +15,7 @@ class ToDoDetails: UIViewController {
     
     var todoItem: ToDoItem!
     var delegate: UpdateToDoItemDelegate!
-    var cellIndex: Int = 0
+    var cellIndex: Int!
     
     init(todoItem: ToDoItem, cellIndex: Int) {
         super.init(nibName: nil, bundle: nil)
@@ -30,31 +30,56 @@ class ToDoDetails: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         configureScreen()
+        todoItemDetails.delegate = self
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .edit, target: self, action: #selector(editItem))
     }
     
+    // MARK: Objc functions
     @objc func editItem() {
+        todoItemTitleLabel.isHidden = false
         todoItemTitle.isEnabled = true
         todoItemTitle.borderStyle = .roundedRect
         
-        todoItemDetails.isEnabled = true
-        todoItemDetails.borderStyle = .roundedRect
+        todoItemDetailsLabel.isHidden = false
+        todoItemDetails.isEditable = true
+        todoItemDetails.frame = CGRect(x: 20, y: 100, width: 300, height: 100)
+        todoItemDetails.font = UIFont.systemFont(ofSize: 16)
+        todoItemDetails.autocorrectionType = .no
+        todoItemDetails.layer.borderWidth = 0.3
+        todoItemDetails.layer.borderColor = UIColor.lightGray.cgColor
+        todoItemDetails.layer.cornerRadius = 8
         
+        todoItemDueDateLabel.isHidden = false
+        todoItemDueDateEditLabel.isHidden = false
+        todoItemDueDateLabel.isHidden = true
         todoItemDueDate.isHidden = true
         datePicker.isHidden = false
         datePickerSwitch.isHidden = false
         
-        // updateTodoButton.isEnabled = true
         updateTodoButton.isHidden = false
-        updateTodoButton.backgroundColor = .blue
-        
-        
         
         navigationItem.rightBarButtonItem?.isHidden = true
     }
     
     @objc func enableDatePicker() {
         datePicker.isEnabled = datePickerSwitch.isOn ? true : false
+        if (datePicker.isEnabled) {
+            updateTodoButton.backgroundColor = .blue
+            updateTodoButton.isEnabled = true
+        }
+        else {
+            updateTodoButton.backgroundColor = .gray
+            updateTodoButton.isEnabled = false
+        }
+    }
+    
+    @objc func shouldEnableUpdateButton() {
+        
+        updateTodoButton.isEnabled = todoItemTitle.text != todoItem.title 
+                                    || todoItemDetails.text != todoItem.description
+                                    // || todoItemDueDate != todoItem.untilDate
+        
+        updateTodoButton.backgroundColor = updateTodoButton.isEnabled ? .blue : .gray
     }
     
     @objc func updateItem() {
@@ -65,6 +90,7 @@ class ToDoDetails: UIViewController {
         delegate.updateToDoItem(item: todoItem, cellIndex: cellIndex)
     }
     
+    // MARK: TodoItemTitle
     lazy var todoItemTitleLabel: UILabel = {
         let todoItemTitleLabel = UILabel()
         todoItemTitleLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
@@ -79,24 +105,40 @@ class ToDoDetails: UIViewController {
         todoItemTitle.autocorrectionType = .no
         todoItemTitle.isEnabled = false
         todoItemTitle.translatesAutoresizingMaskIntoConstraints = false
+        todoItemTitle.addTarget(self, action: #selector(shouldEnableUpdateButton),  for: .editingChanged)
         return todoItemTitle
     }()
     
+    // MARK: TodoItemDetails
     lazy var todoItemDetailsLabel: UILabel = {
         let todoItemDetailsLabel = UILabel()
         todoItemDetailsLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
         todoItemDetailsLabel.text = "To Do Details"
         todoItemDetailsLabel.translatesAutoresizingMaskIntoConstraints = false
+        if (todoItem.description?.isEmpty == true) {
+            todoItemDetailsLabel.isHidden = true
+        }
+            
         return todoItemDetailsLabel
     }()
     
-    lazy var todoItemDetails: UITextField = {
-        let todoItemDetails = UITextField()
+    lazy var todoItemDetails: UITextView = {
+        let todoItemDetails = UITextView()
         todoItemDetails.text = todoItem.description
         todoItemDetails.autocorrectionType = .no
-        todoItemDetails.isEnabled = false
+        todoItemDetails.isEditable = false
         todoItemDetails.translatesAutoresizingMaskIntoConstraints = false
         return todoItemDetails
+    }()
+    
+    // MARK: TodoItemDate
+    lazy var todoItemDueDateEditLabel: UILabel = {
+        let todoItemDueDateEditLabel = UILabel()
+        todoItemDueDateEditLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
+        todoItemDueDateEditLabel.text = "Do until:"
+        todoItemDueDateEditLabel.translatesAutoresizingMaskIntoConstraints = false
+        todoItemDueDateEditLabel.isHidden = true
+        return todoItemDueDateEditLabel
     }()
     
     lazy var todoItemDueDateLabel: UILabel = {
@@ -104,12 +146,15 @@ class ToDoDetails: UIViewController {
         todoItemDueDateLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
         todoItemDueDateLabel.text = "Do until:"
         todoItemDueDateLabel.translatesAutoresizingMaskIntoConstraints = false
+        if (todoItem.untilDate == nil) {
+            todoItemDueDateLabel.isHidden = true
+        }
         return todoItemDueDateLabel
     }()
     
     lazy var todoItemDueDate: UILabel = {
         let todoItemDueDate = UILabel()
-        todoItemDueDate.text = todoItem.untilDate?.description
+        todoItemDueDate.text = todoItem.untilDate?.extractDate()
         todoItemDueDate.translatesAutoresizingMaskIntoConstraints = false
         return todoItemDueDate
     }()
@@ -143,13 +188,13 @@ class ToDoDetails: UIViewController {
         updateTodoButton.backgroundColor = .gray
         updateTodoButton.layer.cornerRadius = 25
         updateTodoButton.addTarget(self, action: #selector(updateItem), for: .touchDown)
-        // updateTodo.isEnabled = false
+        updateTodoButton.isEnabled = false
         updateTodoButton.isHidden = true
         return updateTodoButton
     }()
     
 
-    
+    // MARK: Functions
     func configureScreen() {
         view.backgroundColor = .white
         view.addSubview(todoItemTitleLabel)
@@ -159,6 +204,7 @@ class ToDoDetails: UIViewController {
         view.addSubview(todoItemDetails)
         
         view.addSubview(todoItemDueDateLabel)
+        view.addSubview(todoItemDueDateEditLabel)
         view.addSubview(todoItemDueDate)
         
         view.addSubview(datePicker)
@@ -185,33 +231,77 @@ class ToDoDetails: UIViewController {
             todoItemDetails.topAnchor.constraint(equalTo: todoItemDetailsLabel.bottomAnchor, constant: 10),
             todoItemDetails.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
             todoItemDetails.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
-            todoItemDetails.heightAnchor.constraint(equalToConstant: 120),
+            todoItemDetails.heightAnchor.constraint(equalToConstant: 60),
+
             
-            todoItemDueDateLabel.topAnchor.constraint(equalTo: todoItemDetails.bottomAnchor, constant: 30),
-            todoItemDueDateLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
-            todoItemDueDateLabel.widthAnchor.constraint(equalToConstant: view.frame.width),
-            todoItemDueDateLabel.heightAnchor.constraint(equalToConstant: 50),
+            todoItemDueDate.topAnchor.constraint(equalTo: todoItemDueDateLabel.topAnchor),
+            todoItemDueDate.leadingAnchor.constraint(equalTo: todoItemDueDateLabel.trailingAnchor, constant: 10),
+            todoItemDueDate.heightAnchor.constraint(equalToConstant: 50),
+            todoItemDueDate.widthAnchor.constraint(equalToConstant: 150),
             
-            todoItemDueDate.topAnchor.constraint(equalTo: todoItemDueDateLabel.bottomAnchor, constant: 10),
-            todoItemDueDate.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
-            todoItemDueDate.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
-            todoItemDueDate.heightAnchor.constraint(equalToConstant: 120),
+            datePickerSwitch.topAnchor.constraint(equalTo: todoItemDetails.bottomAnchor, constant: 20),
+            datePickerSwitch.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
+            datePickerSwitch.heightAnchor.constraint(equalToConstant: 50),
             
-            datePickerSwitch.topAnchor.constraint(equalTo: todoItemDueDateLabel.topAnchor, constant: 30),
-            datePickerSwitch.leadingAnchor.constraint(equalTo: view.trailingAnchor, constant: 10),
-            datePickerSwitch.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            datePickerSwitch.widthAnchor.constraint(equalToConstant: 40),
-            datePickerSwitch.heightAnchor.constraint(equalToConstant: 40),
+            todoItemDueDateEditLabel.topAnchor.constraint(equalTo: todoItemDetails.bottomAnchor, constant: 20),
+            todoItemDueDateEditLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
+            todoItemDueDateEditLabel.heightAnchor.constraint(equalToConstant: 50),
             
-            datePicker.topAnchor.constraint(equalTo: todoItemDueDateLabel.bottomAnchor, constant: 10),
+            datePicker.topAnchor.constraint(equalTo: todoItemDetails.bottomAnchor, constant: 30),
             datePicker.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
-            datePicker.widthAnchor.constraint(equalToConstant: view.frame.width),
+            datePicker.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             datePicker.heightAnchor.constraint(equalToConstant: 200),
             
             updateTodoButton.topAnchor.constraint(equalTo: datePicker.bottomAnchor, constant: 10),
-            updateTodoButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
+            updateTodoButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             updateTodoButton.widthAnchor.constraint(equalToConstant: 100),
             updateTodoButton.heightAnchor.constraint(equalToConstant: 50),
         ])
+        
+        if !todoItemDetails.text.isEmpty {
+            NSLayoutConstraint.activate([
+                todoItemDueDateLabel.topAnchor.constraint(equalTo: todoItemDetails.bottomAnchor, constant: 20),
+                todoItemDueDateLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
+                todoItemDueDateLabel.heightAnchor.constraint(equalToConstant: 50),
+            ])
+        }
+        else {
+            NSLayoutConstraint.activate([
+                todoItemDueDateLabel.topAnchor.constraint(equalTo: todoItemTitle.bottomAnchor, constant: 30),
+                todoItemDueDateLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
+                todoItemDueDateLabel.heightAnchor.constraint(equalToConstant: 50),
+            ])
+        }
+        
+    }
+}
+
+// MARK: Extensions
+extension Date {
+    func extractDate() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd-MM-yyyy"
+        return formatter.string(from: self)
+    }
+}
+
+extension ToDoDetails : UITextViewDelegate {
+    
+    func textViewDidChange(_ textView: UITextView) {
+        shouldEnableUpdateButton()
+        // adjustTextViewHeight()
+    }
+    
+    func adjustTextViewHeight() {
+        let size = todoItemDetails.sizeThatFits(CGSize(width: todoItemDetails.frame.width, height: CGFloat.greatestFiniteMagnitude))
+        
+        UIView.animate(withDuration: 0.2) {
+            self.todoItemDetails.constraints.forEach { constraint in
+                if constraint.firstAttribute == .height {
+                    constraint.constant = size.height
+                }
+            }
+            self.view.layoutIfNeeded()
+        }
     }
 }

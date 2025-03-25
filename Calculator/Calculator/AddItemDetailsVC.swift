@@ -25,11 +25,16 @@ class AddItemDetailsVC: UIViewController {
     }()
     
     lazy var todoItemTitle: UITextField = {
-       let todoItemTitle = UITextField()
-        todoItemTitle.placeholder = "Required "
+        let todoItemTitle = UITextField()
+    
+        todoItemTitle.autocorrectionType = .no
         todoItemTitle.translatesAutoresizingMaskIntoConstraints = false
+        
         todoItemTitle.borderStyle = .roundedRect
+        todoItemTitle.placeholder = "Required"
         todoItemTitle.addTarget(self, action: #selector(enableSubmitButton), for: .editingChanged)
+        
+        
         return todoItemTitle
     }()
     
@@ -42,11 +47,15 @@ class AddItemDetailsVC: UIViewController {
         return todoItemDetailsLabel
     }()
     
-    lazy var todoItemDetails: UITextField = {
-        let todoItemDetails = UITextField()
-        todoItemDetails.placeholder = "Optional"
+    lazy var todoItemDetails: UITextView = {
+        let todoItemDetails = UITextView()
+        todoItemDetails.frame = CGRect(x: 20, y: 100, width: 300, height: 100)
+        todoItemDetails.font = UIFont.systemFont(ofSize: 16)
         todoItemDetails.translatesAutoresizingMaskIntoConstraints = false
-        todoItemDetails.borderStyle = .roundedRect
+        todoItemDetails.autocorrectionType = .no
+        todoItemDetails.layer.borderWidth = 0.3
+        todoItemDetails.layer.borderColor = UIColor.lightGray.cgColor
+        todoItemDetails.layer.cornerRadius = 8
         return todoItemDetails
     }()
     
@@ -108,11 +117,6 @@ class AddItemDetailsVC: UIViewController {
         let date = datePicker.isEnabled ? datePicker.date : nil
         let todoItem = ToDoItem(title: title, description: details, untilDate: date)
         delegate?.addToDoITem(todoItem: todoItem)
-        
-        // Nothing of the following works in order to dismiss the VC.
-        // Is the reason becuase I pushed the view using navigationController?
-        // dismiss(animated: true)
-        // presentingViewController?.dismiss(animated: true)
     }
     
     // MARK: functions
@@ -168,11 +172,10 @@ class AddItemDetailsVC: UIViewController {
             datePickerLabel.widthAnchor.constraint(equalToConstant: 100),
             datePickerLabel.heightAnchor.constraint(equalToConstant: 50),
             
-            datePickerSwitch.topAnchor.constraint(equalTo: todoItemDetails.bottomAnchor, constant: 30),
-            datePickerSwitch.leadingAnchor.constraint(equalTo: datePickerLabel.trailingAnchor, constant: 10),
-            datePickerSwitch.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            // datePickerSwitch.widthAnchor.constraint(equalToConstant: 40),
-            datePickerSwitch.heightAnchor.constraint(equalToConstant: 40),
+            datePickerSwitch.topAnchor.constraint(equalTo: todoItemDetails.bottomAnchor, constant: 40),
+            datePickerSwitch.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            datePickerSwitch.widthAnchor.constraint(equalToConstant: 44),
+            datePickerSwitch.heightAnchor.constraint(equalToConstant: 44),
             
             datePicker.topAnchor.constraint(equalTo: datePickerLabel.bottomAnchor, constant: 10),
             datePicker.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),

@@ -13,8 +13,8 @@ class ToDoTableView: UITableViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        configureTable()
         configureEmptyTodoList()
+        configureTable()
     }
     
     func setEmptyTodoListVisibility(_ visibility: Bool) {
@@ -22,7 +22,6 @@ class ToDoTableView: UITableViewController {
     }
     
     func configureEmptyTodoList() {
-        emptyView.isHidden = true
         view.addSubview(emptyView)
         NSLayoutConstraint.activate([
             emptyView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -37,6 +36,9 @@ class ToDoTableView: UITableViewController {
         todoItems = DataManager.shared.loadData() ?? []
         if(todoItems.isEmpty) {
             setEmptyTodoListVisibility(true)
+        }
+        else {
+            setEmptyTodoListVisibility(false)
         }
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "ToDoCell")
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addItem))
@@ -92,20 +94,6 @@ extension ToDoTableView : AddItemDetailsDelegate {
         tableView.reloadData()
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 extension ToDoTableView: UpdateToDoItemDelegate {
     func updateToDoItem(item: ToDoItem, cellIndex: Int) {
